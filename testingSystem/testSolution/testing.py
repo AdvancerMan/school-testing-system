@@ -3,7 +3,7 @@ import subprocess
 import signal
 from SchoolTestingSystem import settings
 import os
-import sys
+import threading
 from concurrent import futures
 import time
 from importlib import import_module
@@ -180,3 +180,7 @@ def submit_attempt(attempt: models.Attempt):
         subprocess.run(["rm", "-rf", folder_path])
 
     return attempt
+
+
+def submit_attempt_async(attempt):
+    threading.Thread(target=submit_attempt, args=[attempt]).start()

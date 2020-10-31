@@ -1,0 +1,71 @@
+{% extends 'testingSystem/common.html' %}
+{% load static %}
+
+{% block main %}
+    <h3>{{ task.name }}</h3>
+    <div>
+        <div>
+            <h4>Легенда</h4>
+            <p>{{ task.legend }}</p>
+            <h4>Условие</h4>
+            <p>{{ task.statement }}</p>
+        </div>
+        <div>
+            <h4>Попытки</h4>
+            <table>
+                <tr>
+                    <th>Дата</th>
+                    <th>Оценка</th>
+                    <th>Действие</th>
+                </tr>
+                {% for attempt in attempts %}
+                    <tr>
+                        <td>{{ attempt.creation_time }}</td>
+                        <td>{{ attempt.score|floatformat:0 }}%</td>
+                        <td>
+                            <a href="{% url 'attempt' attempt.id %}">
+                                Посмотреть
+                            </a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td>Тут будут</td>
+                        <td>ваши</td>
+                        <td>попытки</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <div>
+            <h4>Язык</h4>
+            <label>
+                <select name="language">
+                    {% for language in languages %}
+                        <option value="{{ language }}">{{ language }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        </div>
+        <div>
+            <h4>Осталось времени</h4>
+            {#            TODO времени осталось #}
+        </div>
+        <div>
+            <h4>Ваш код</h4>
+            <label>
+                <textarea name="solution">{{ solution }}</textarea>
+            </label>
+        </div>
+        <div>
+            <h4>...Или загрузите файлом</h4>
+            <input type="file" name="solution_file">
+        </div>
+        <div>
+            <input type="submit" value="Отправить на проверку">
+        </div>
+    </form>
+{% endblock %}

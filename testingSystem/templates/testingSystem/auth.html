@@ -1,13 +1,7 @@
+{% extends 'testingSystem/common.html' %}
 {% load static %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Московская Электронная Школа</title>
-</head>
-<body>
-<main>
+{% block main %}
     <form method="post">
         {% csrf_token %}
         <p>Авторизация</p>
@@ -34,6 +28,4 @@
     <a href="{% url 'register' %}">Зарегистрироваться</a>
     <img src="{% static 'testingSystem/img/authorize_code.svg' %}"
          alt="Кодер кодит">
-</main>
-</body>
-</html>
+{% endblock %}

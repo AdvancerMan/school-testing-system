@@ -94,7 +94,7 @@ class Attempt(models.Model):
     solution = models.CharField(max_length=256 * 1024)
     language = models.CharField(max_length=32, choices=Language.choices)
     checked_tests = models.ManyToManyField(CheckedTest)
-    score = models.FloatField()
+    score = models.FloatField(default=0)
     creation_time = models.DateTimeField(auto_now_add=True)
 
     def get_status(self):
