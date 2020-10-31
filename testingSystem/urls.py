@@ -1,4 +1,4 @@
-from django.urls import path, include
+from django.urls import path, re_path
 from . import views
 
 urlpatterns = [
@@ -11,4 +11,5 @@ urlpatterns = [
     path("forgot/", views.RecoverPasswordView.as_view(), name="forgot"),
     path("task/<int:id>", views.TaskView.as_view(), name="task"),
     path("attempt/<int:id>", views.AttemptView.as_view(), name="attempt"),
+    re_path('', views.get404Response)
 ]

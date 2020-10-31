@@ -17,6 +17,12 @@ def extract_from_session(name, request, context):
     return context
 
 
+def get404Response(request, *args, **kwargs):
+    return HttpResponseNotFound(render(
+        request, "testingSystem/404.html"
+    ))
+
+
 class ClassWorkView(TemplateView):
     template_name = 'testingSystem/student_classwork.html'
 
@@ -77,22 +83,11 @@ class RecoverPasswordView(TemplateView):
         return extract_from_session('error', self.request, context)
 
 
-# TODO
-class IndexView(TemplateView):
-    template_name = "testingSystem/auth.html"
-
-    def get_context_data(self, **kwargs):
-        context = super(IndexView, self).get_context_data(**kwargs)
-        return extract_from_session('error', self.request, context)
-
-
 class TaskView(View):
     def get(self, request, id, *args, **kwargs):
         task = models.Task.objects.filter(id=id).first()
         if task is None:
-            # TODO 404 page
-            return HttpResponseNotFound()
-
+            return get404Response(request)
         return render(request, 'testingSystem/task.html',
                       context=self.get_context_data(request, task))
 
@@ -140,8 +135,7 @@ class AttemptView(View):
     def get(self, request, id, *args, **kwargs):
         attempt = models.Attempt.objects.filter(id=id).first()
         if attempt is None:
-            # TODO 404 page
-            return HttpResponseNotFound("Not found")
+            return get404Response(request)
         return HttpResponseNotFound(":((")
         # return render(request, 'testingSystem/task.html',
         #               context=self.get_context_data(request, task))
