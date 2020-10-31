@@ -1,0 +1,31 @@
+{% extends 'testingSystem/common.html' %}
+{% load static %}
+
+{% block main %}
+    <form method="post">
+        {% csrf_token %}
+        <p>Авторизация</p>
+        <label>
+            Логин
+            <input type="text" name="login">
+        </label>
+        <label>
+            Пароль
+            <input type="password" name="password">
+        </label>
+        <a href="{% url 'forgot' %}">Забыли пароль?</a>
+        <label>
+            Оставаться в системе
+            <input type="checkbox" name="stay_authorized" value="+">
+        </label>
+        {% if error %}
+            <div>
+                {{ error }}
+            </div>
+        {% endif %}
+        <input type="submit" value="Войти">
+    </form>
+    <a href="{% url 'register' %}">Зарегистрироваться</a>
+    <img src="{% static 'testingSystem/img/authorize_code.svg' %}"
+         alt="Кодер кодит">
+{% endblock %}
