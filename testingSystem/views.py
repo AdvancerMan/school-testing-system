@@ -87,8 +87,9 @@ class TaskView(View):
                 task__id=task.id,
                 author__user_id=request.user.id
             ),
-            'languages': [choice[1] for choice in models.Language.choices],
+            'languages': [choice[0] for choice in models.Language.choices]
         }
+        extract_from_session('error', request, context)
         return extract_from_session('solution', request, context)
 
     def post(self, request, id, *args, **kwargs):
@@ -109,7 +110,13 @@ class TaskView(View):
                     language=language,
                 )
                 submit_attempt_async(attempt)
-                request.session['solution'] = data.get('solution')
+                request.session['solution'] = solution
+            else:
+                request.session['error'] = 'Пожалуйста, добавьте свое ' \
+                                           'решение перед отправкой'
+            request.session['language'] = language
+        else:
+            request.session['error'] = 'Некорректный ввод'
         return HttpResponseRedirect('')
 
 
@@ -118,7 +125,7 @@ class AttemptView(View):
         attempt = models.Attempt.objects.filter(id=id).first()
         if attempt is None:
             # TODO 404 page
-            return HttpResponseNotFound()
+            return HttpResponseNotFound("Not found")
         return HttpResponseNotFound(":((")
         # return render(request, 'testingSystem/task.html',
         #               context=self.get_context_data(request, task))

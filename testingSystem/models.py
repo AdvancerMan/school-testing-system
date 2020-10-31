@@ -84,7 +84,7 @@ class Task(models.Model):
 
 class Language(models.TextChoices):
     PYTHON = 'Python', 'Python'
-    CPP = 'C++', 'С++'
+    CPP = 'C++', 'C++'
 
 
 class Attempt(models.Model):
