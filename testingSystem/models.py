@@ -79,7 +79,7 @@ class Task(models.Model):
     creation_time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Задача {self.name} от пользователя {self.author}"
+        return self.name
 
 
 class Language(models.TextChoices):

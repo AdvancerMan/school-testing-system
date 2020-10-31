@@ -1,0 +1,42 @@
+{% extends 'testingSystem/common.html' %}
+
+{% block main %}
+    <h3>
+        Попытка ученика {{ attempt.author }} по задаче {{ attempt.task }}
+    </h3>
+    <div>
+        <table>
+            <tr>
+                <th>Оценка</th>
+                <th>Язык программирования</th>
+            </tr>
+            <tr>
+                <td>{{ attempt.score|floatformat:1 }}%</td>
+                <td>{{ attempt.language }}</td>
+            </tr>
+        </table>
+        <table>
+            <tr>
+                <th>№</th>
+                <th>Статус проверки</th>
+                <th>Время работы</th>
+                <th>Использовано памяти</th>
+                <th>Дополнительное сообщение</th>
+            </tr>
+            {% for test in attempt.checked_tests.all %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ test.status }}</td>
+                    <td>{{ test.time_used }} мс</td>
+                    <td>{{ test.memory_used }} КБ</td>
+                    <td>{{ test.message }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+        <label>
+            <div>Решение ученика:</div>
+            <textarea disabled wrap="soft" cols="50" rows="20"
+                      style="color: inherit">{{ attempt.solution }}</textarea>
+        </label>
+    </div>
+{% endblock %}

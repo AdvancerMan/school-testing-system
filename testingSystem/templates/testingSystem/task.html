@@ -20,8 +20,8 @@
                 </tr>
                 {% for attempt in attempts %}
                     <tr>
-                        <td>{{ attempt.creation_time }}</td>
-                        <td>{{ attempt.score|floatformat:0 }}%</td>
+                        <td>{{ attempt.creation_time|date:"G:i:s j.m.Y" }}</td>
+                        <td>{{ attempt.score|floatformat:1 }}%</td>
                         <td>
                             <a href="{% url 'attempt' attempt.id %}">
                                 Посмотреть
@@ -58,7 +58,8 @@
         <div>
             <h4>Ваш код</h4>
             <label>
-                <textarea name="solution">{{ solution }}</textarea>
+                <textarea wrap="soft" cols="50" rows="20"
+                          name="solution">{{ solution }}</textarea>
             </label>
         </div>
         <div>

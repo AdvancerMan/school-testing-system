@@ -136,6 +136,5 @@ class AttemptView(View):
         attempt = models.Attempt.objects.filter(id=id).first()
         if attempt is None:
             return get404Response(request)
-        return HttpResponseNotFound(":((")
-        # return render(request, 'testingSystem/task.html',
-        #               context=self.get_context_data(request, task))
+        return render(request, 'testingSystem/attempt.html',
+                      context={'attempt': attempt})
