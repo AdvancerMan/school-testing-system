@@ -3,6 +3,7 @@ import subprocess
 import signal
 from SchoolTestingSystem import settings
 import os
+import sys
 from concurrent import futures
 import time
 from importlib import import_module
@@ -18,15 +19,15 @@ def strip_answer(answer):
     ).strip()
 
 
-def check_contents_are_equal(input, output, *args, **kwargs):
-    return strip_answer(input) == strip_answer(output)
+def check_contents_are_equal(test, output, *args, **kwargs):
+    return strip_answer(test.output) == strip_answer(output)
 
 
 def get_checker(name):
     try:
         return import_module("testingSystem.testSolution."
                              "checkers." + name).check
-    except AttributeError or ModuleNotFoundError:
+    except (ModuleNotFoundError, AttributeError):
         return check_contents_are_equal
 
 
@@ -34,12 +35,12 @@ def get_post_processor(name):
     try:
         return import_module("testingSystem.testSolution."
                              "postProcessors." + name).processor
-    except AttributeError or ImportError:
+    except (ModuleNotFoundError, AttributeError):
         return simple_post_processor
 
 
-def invoke_checker(task, input, output):
-    return get_checker(task.checker_name)(input, output, strip_answer)
+def invoke_checker(task, test, output):
+    return get_checker(task.checker_name)(test, output, strip_answer)
 
 
 def invoke_post_processor(attempt, checked_tests):
@@ -56,7 +57,7 @@ def check_resources(pid):
         status_file = f.read().split(os.linesep)
     memory_used = [s for s in status_file if s.startswith('VmRSS')]
     if len(memory_used) == 0:
-        raise FileNotFoundError()
+        raise ProcessLookupError()
     memory_used = int([s for s in memory_used[0].split() if s][1])
 
     with open(f'/proc/{pid}/schedstat', 'r') as f:
@@ -68,44 +69,49 @@ def test_program(task, start_program, test):
     start_time = time.time()
     process = subprocess.Popen(start_program,
                                stdin=subprocess.PIPE,
-                               stdout=subprocess.PIPE)
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
     process.send_signal(signal.SIGSTOP)
 
     with futures.ThreadPoolExecutor() as executor:
         tested = executor.submit(
-            lambda: process.communicate(input=str.encode(test.input))[0]
+            lambda: process.communicate(input=str.encode(test.input))
         )
-        while not tested.done():
-            try:
-                memory_used, time_used = check_resources(process.pid)
-            except FileNotFoundError:
-                break
-            test.memory_used = max(test.memory_used, memory_used)
-            test.time_used = max(test.time_used, time_used)
+        try:
+            while not tested.done():
+                try:
+                    memory_used, time_used = check_resources(process.pid)
+                except ProcessLookupError:
+                    break
+                test.memory_used = max(test.memory_used, memory_used)
+                test.time_used = max(test.time_used, time_used)
 
-            if memory_used > task.memory_limit:
-                test.status = models.Status.ML
-                process.send_signal(signal.SIGKILL)
+                if memory_used > task.memory_limit:
+                    test.status = models.Status.ML
+                    process.send_signal(signal.SIGKILL)
 
-            if time_used > task.time_limit:
-                test.status = models.Status.TL
-                process.send_signal(signal.SIGKILL)
+                if time_used > task.time_limit:
+                    test.status = models.Status.TL
+                    process.send_signal(signal.SIGKILL)
 
-            if time.time() - start_time > \
-                    REAL_TIME_LIMIT_ADDITION + task.time_limit // 1000:
-                test.status = models.Status.IL
-                process.send_signal(signal.SIGKILL)
+                if time.time() - start_time > \
+                        REAL_TIME_LIMIT_ADDITION + task.time_limit // 1000:
+                    test.status = models.Status.IL
+                    process.send_signal(signal.SIGKILL)
 
+                process.send_signal(signal.SIGCONT)
+                time.sleep(0.020)
+                process.send_signal(signal.SIGSTOP)
             process.send_signal(signal.SIGCONT)
-            time.sleep(0.020)
-            process.send_signal(signal.SIGSTOP)
-        process.send_signal(signal.SIGCONT)
-        result = tested.result()
+        except ProcessLookupError:
+            pass
+        output, errors = [s.decode() for s in tested.result()]
 
+    test.message = errors
     if test.status == models.Status.OK:
         if process.returncode != 0:
             test.status = models.Status.RE
-        elif not invoke_checker(task, test.input, result.decode()):
+        elif not invoke_checker(task, test, output):
             test.status = models.Status.WA
 
 
@@ -145,11 +151,11 @@ def test_attempt(attempt, folder_path, compiler, tester):
     except subprocess.CalledProcessError:
         for test in tests:
             test.status = models.Status.CE
-        invoke_post_processor(attempt, tests)
-        return attempt
-
-    for i, test in zip(range(len(tests)), tests):
-        tester(attempt.task, folder_path, program_path, test)
+    else:
+        with futures.ThreadPoolExecutor() as executor:
+            executor.map(lambda test: tester(attempt.task, folder_path,
+                                             program_path, test),
+                         tests)
     invoke_post_processor(attempt, tests)
     return attempt
 

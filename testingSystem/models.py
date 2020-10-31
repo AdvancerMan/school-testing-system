@@ -30,6 +30,18 @@ class MyUser(models.Model):
                f"{self.middle_name}"
 
 
+class Status(models.TextChoices):
+    OK = 'OK', 'Решение зачтено'
+    CE = 'CE', 'Ошибка компиляции'
+    WA = 'WA', 'Неверный ответ'
+    TL = 'TL', 'Превышен лимит времени'
+    ML = 'ML', 'Превышен лимит памяти'
+    RE = 'RE', 'Ошибка выполнения'
+    IL = 'IL', 'Превышен лимит ожидания'
+    SE = 'SE', 'Ошибка сервера'
+    RJ = 'RJ', 'Решение отклонено'
+
+
 class Test(models.Model):
     input = models.CharField(max_length=256 * 1024)
     output = models.CharField(max_length=256 * 1024)
@@ -37,6 +49,19 @@ class Test(models.Model):
 
 class Testset(models.Model):
     tests = models.ManyToManyField(Test)
+
+
+class CheckedTest(Test):
+    status = models.CharField(max_length=2, choices=Status.choices)
+    memory_used = models.IntegerField()
+    time_used = models.IntegerField()
+    message = models.CharField(default="", max_length=256 * 1024)
+
+    def __str__(self):
+        return f"{self.message}     " \
+               f"[{self.status}] " \
+               f"Использовано памяти: {self.memory_used} Килобайт; " \
+               f"Использовано времени: {self.time_used} миллисекунд"
 
 
 class Task(models.Model):
@@ -57,32 +82,9 @@ class Task(models.Model):
         return f"Задача {self.name} от пользователя {self.author}"
 
 
-class Status(models.TextChoices):
-    OK = 'OK', 'Решение зачтено'
-    CE = 'CE', 'Ошибка компиляции'
-    WA = 'WA', 'Неверный ответ'
-    TL = 'TL', 'Превышен лимит времени'
-    ML = 'ML', 'Превышен лимит памяти'
-    RE = 'RE', 'Ошибка выполнения'
-    IL = 'IL', 'Превышен лимит ожидания'
-    SE = 'SE', 'Ошибка сервера'
-    RJ = 'RJ', 'Решение отклонено'
-
-
 class Language(models.TextChoices):
     PYTHON = 'Python', 'Python'
-    CPP = 'C++', 'Java'
-
-
-class CheckedTest(Test):
-    status = models.CharField(max_length=2, choices=Status.choices)
-    memory_used = models.IntegerField()
-    time_used = models.IntegerField()
-
-    def __str__(self):
-        return f"[{self.status}] " \
-               f"Использовано памяти: {self.memory_used} Килобайт; " \
-               f"Использовано времени: {self.time_used} миллисекунд"
+    CPP = 'C++', 'С++'
 
 
 class Attempt(models.Model):
