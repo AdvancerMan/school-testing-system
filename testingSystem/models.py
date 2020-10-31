@@ -49,9 +49,9 @@ class Task(models.Model):
     samples_prefix = models.IntegerField()
     time_limit = models.IntegerField()
     memory_limit = models.IntegerField()
-    checker_path = models.CharField(max_length=128)
+    checker_path = models.CharField(null=True, max_length=128)
     post_processor_path = models.CharField(null=True, max_length=128)
-    creation_time = models.DateTimeField(null=True, auto_now_add=True)
+    creation_time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Задача {self.name} от пользователя {self.author}"
@@ -61,7 +61,6 @@ class Status(models.TextChoices):
     OK = 'OK', 'Решение зачтено'
     CE = 'CE', 'Ошибка компиляции'
     WA = 'WA', 'Неверный ответ'
-    PE = 'PE', 'Неверный формат вывода'
     TL = 'TL', 'Превышен лимит времени'
     ML = 'ML', 'Превышен лимит памяти'
     RE = 'RE', 'Ошибка выполнения'
@@ -70,8 +69,8 @@ class Status(models.TextChoices):
 
 
 class Language(models.TextChoices):
-    PYTHON = 'PY', 'Python'
-    JAVA = 'JV', 'Java'
+    PYTHON = 'Python', 'Python'
+    CPP = 'C++', 'Java'
 
 
 class Attempt(models.Model):
@@ -79,7 +78,7 @@ class Attempt(models.Model):
     author = models.ForeignKey(MyUser, on_delete=models.CASCADE)
     task = models.ForeignKey(Task, on_delete=models.CASCADE)
     solution = models.CharField(max_length=256 * 1024)
-    language = models.CharField(max_length=2, choices=Language.choices)
+    language = models.CharField(max_length=32, choices=Language.choices)
     status = models.CharField(max_length=2, choices=Status.choices)
     failed_test_index = models.IntegerField()
     memory_used = models.IntegerField()
