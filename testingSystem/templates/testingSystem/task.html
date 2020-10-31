@@ -38,14 +38,15 @@
             </table>
         </div>
     </div>
-    <form method="post">
+    <form enctype="multipart/form-data" method="post">
         {% csrf_token %}
         <div>
             <h4>Язык</h4>
             <label>
                 <select name="language">
-                    {% for language in languages %}
-                        <option value="{{ language }}">{{ language }}</option>
+                    {% for lang in languages %}
+                        <option {% if lang == language %}selected{% endif %}
+                                value="{{ lang }}">{{ lang }}</option>
                     {% endfor %}
                 </select>
             </label>
@@ -61,8 +62,11 @@
             </label>
         </div>
         <div>
-            <h4>...Или загрузите файлом</h4>
+            <h4>...Или загрузите файлом (пока недоступно)</h4>
             <input type="file" name="solution_file">
+        </div>
+        <div>
+            {{ error }}
         </div>
         <div>
             <input type="submit" value="Отправить на проверку">
