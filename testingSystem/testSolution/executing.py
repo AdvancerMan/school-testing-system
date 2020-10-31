@@ -5,6 +5,9 @@ from SchoolTestingSystem import settings
 import os
 from concurrent import futures
 import time
+from importlib import import_module
+from .postProcessors.simple_post_processor import processor \
+    as simple_post_processor
 
 REAL_TIME_LIMIT_ADDITION = 5  # seconds
 
@@ -13,6 +16,39 @@ def strip_answer(answer):
     return os.linesep.join(
         line.strip() for line in answer.split(os.linesep)
     ).strip()
+
+
+def check_contents_are_equal(input, output, *args, **kwargs):
+    return strip_answer(input) == strip_answer(output)
+
+
+def get_checker(name):
+    try:
+        return import_module("testingSystem.testSolution."
+                             "checkers." + name).check
+    except AttributeError or ModuleNotFoundError:
+        return check_contents_are_equal
+
+
+def get_post_processor(name):
+    try:
+        return import_module("testingSystem.testSolution."
+                             "postProcessors." + name).processor
+    except AttributeError or ImportError:
+        return simple_post_processor
+
+
+def invoke_checker(task, input, output):
+    return get_checker(task.checker_name)(input, output, strip_answer)
+
+
+def invoke_post_processor(attempt, checked_tests):
+    post_processor = get_post_processor(attempt.task.post_processor_name)
+    attempt.score = post_processor(checked_tests, models.Status)
+    for test in checked_tests:
+        test.save()
+    attempt.checked_tests.add(*checked_tests)
+    attempt.save()
 
 
 def check_resources(pid):
@@ -28,9 +64,9 @@ def check_resources(pid):
     return memory_used, time_used
 
 
-def test_program(attempt, console_command_and_args, test):
+def test_program(task, start_program, test):
     start_time = time.time()
-    process = subprocess.Popen(console_command_and_args,
+    process = subprocess.Popen(start_program,
                                stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE)
     process.send_signal(signal.SIGSTOP)
@@ -44,20 +80,20 @@ def test_program(attempt, console_command_and_args, test):
                 memory_used, time_used = check_resources(process.pid)
             except FileNotFoundError:
                 break
-            attempt.memory_used = max(attempt.memory_used, memory_used)
-            attempt.time_used = max(attempt.time_used, time_used)
+            test.memory_used = max(test.memory_used, memory_used)
+            test.time_used = max(test.time_used, time_used)
 
-            if memory_used > attempt.task.memory_limit:
-                attempt.status = models.Status.ML
+            if memory_used > task.memory_limit:
+                test.status = models.Status.ML
                 process.send_signal(signal.SIGKILL)
 
-            if time_used > attempt.task.time_limit:
-                attempt.status = models.Status.TL
+            if time_used > task.time_limit:
+                test.status = models.Status.TL
                 process.send_signal(signal.SIGKILL)
 
             if time.time() - start_time > \
-                    REAL_TIME_LIMIT_ADDITION + attempt.task.time_limit // 1000:
-                attempt.status = models.Status.IL
+                    REAL_TIME_LIMIT_ADDITION + task.time_limit // 1000:
+                test.status = models.Status.IL
                 process.send_signal(signal.SIGKILL)
 
             process.send_signal(signal.SIGCONT)
@@ -66,11 +102,11 @@ def test_program(attempt, console_command_and_args, test):
         process.send_signal(signal.SIGCONT)
         result = tested.result()
 
-    if attempt.status == models.Status.OK:
+    if test.status == models.Status.OK:
         if process.returncode != 0:
-            attempt.status = models.Status.RE
-        elif strip_answer(test.output) != strip_answer(result.decode()):
-            attempt.status = models.Status.WA
+            test.status = models.Status.RE
+        elif not invoke_checker(task, test.input, result.decode()):
+            test.status = models.Status.WA
 
 
 def compile_python(folder_path, code):
@@ -80,8 +116,8 @@ def compile_python(folder_path, code):
     return "main.py"
 
 
-def test_python(_, program_path, test, attempt):
-    test_program(attempt, ['python3', program_path], test)
+def test_python(task, _, program_path, test):
+    test_program(task, ['python3', program_path], test)
 
 
 def compile_cpp(folder_path, code):
@@ -94,8 +130,28 @@ def compile_cpp(folder_path, code):
     return "main"
 
 
-def test_cpp(folder_path, program_path, test, attempt):
-    test_program(attempt, [program_path], test)
+def test_cpp(task, _, program_path, test):
+    test_program(task, [program_path], test)
+
+
+def test_attempt(attempt, folder_path, compiler, tester):
+    tests = [models.CheckedTest.objects.create(
+        input=test.input, output=test.output,
+        status=models.Status.OK, memory_used=0, time_used=0
+    ) for test in attempt.task.testset.tests.all()]
+    try:
+        program_path = os.path.join(folder_path,
+                                    compiler(folder_path, attempt.solution))
+    except subprocess.CalledProcessError:
+        for test in tests:
+            test.status = models.Status.CE
+        invoke_post_processor(attempt, tests)
+        return attempt
+
+    for i, test in zip(range(len(tests)), tests):
+        tester(attempt.task, folder_path, program_path, test)
+    invoke_post_processor(attempt, tests)
+    return attempt
 
 
 def submit_attempt(attempt: models.Attempt):
@@ -110,23 +166,9 @@ def submit_attempt(attempt: models.Attempt):
 
     try:
         subprocess.run(["mkdir", "-p", folder_path])
-
-        try:
-            program_path = os.path.join(folder_path,
-                                        compiler(folder_path, attempt.solution))
-        except subprocess.CalledProcessError as e:
-            attempt.status = models.Status.CE
-            return attempt
-
-        tests = list(attempt.task.testset.tests.all())
-        attempt.failed_test_index = 0
-        for i, test in zip(range(len(tests)), tests):
-            tester(folder_path, program_path, test, attempt)
-            if attempt.status != models.Status.OK:
-                return attempt
-            attempt.failed_test_index += 1
+        test_attempt(attempt, folder_path, compiler, tester)
     except Exception as e:
-        attempt.status = models.Status.RJ
+        attempt.status = models.Status.SE
         raise e
     finally:
         subprocess.run(["rm", "-rf", folder_path])

@@ -49,8 +49,8 @@ class Task(models.Model):
     samples_prefix = models.IntegerField()
     time_limit = models.IntegerField()
     memory_limit = models.IntegerField()
-    checker_path = models.CharField(null=True, max_length=128)
-    post_processor_path = models.CharField(null=True, max_length=128)
+    checker_name = models.CharField(null=True, max_length=128)
+    post_processor_name = models.CharField(null=True, max_length=128)
     creation_time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -65,6 +65,7 @@ class Status(models.TextChoices):
     ML = 'ML', 'Превышен лимит памяти'
     RE = 'RE', 'Ошибка выполнения'
     IL = 'IL', 'Превышен лимит ожидания'
+    SE = 'SE', 'Ошибка сервера'
     RJ = 'RJ', 'Решение отклонено'
 
 
@@ -73,18 +74,33 @@ class Language(models.TextChoices):
     CPP = 'C++', 'Java'
 
 
+class CheckedTest(Test):
+    status = models.CharField(max_length=2, choices=Status.choices)
+    memory_used = models.IntegerField()
+    time_used = models.IntegerField()
+
+    def __str__(self):
+        return f"[{self.status}] " \
+               f"Использовано памяти: {self.memory_used} Килобайт; " \
+               f"Использовано времени: {self.time_used} миллисекунд"
+
+
 class Attempt(models.Model):
     id = models.BigAutoField(primary_key=True)
     author = models.ForeignKey(MyUser, on_delete=models.CASCADE)
     task = models.ForeignKey(Task, on_delete=models.CASCADE)
     solution = models.CharField(max_length=256 * 1024)
     language = models.CharField(max_length=32, choices=Language.choices)
-    status = models.CharField(max_length=2, choices=Status.choices)
-    failed_test_index = models.IntegerField()
-    memory_used = models.IntegerField()
-    time_used = models.IntegerField()
+    checked_tests = models.ManyToManyField(CheckedTest)
+    score = models.FloatField()
     creation_time = models.DateTimeField(auto_now_add=True)
 
+    def get_status(self):
+        statuses = [test.status for test in self.checked_tests.all()]
+        not_ok = [status for status in statuses if status != Status.OK]
+        if len(not_ok) != 0:
+            return not_ok[0]
+        return Status.OK
+
     def __str__(self):
-        return f"Попытка по задаче {self.task.name} " \
-               f"от пользователя {self.author} [{self.status}]"
+        return f"Попытка по задаче {self.task.name}"
