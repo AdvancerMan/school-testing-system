@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div><img src="{% static 'testingSystem/img/pensil.svg' %}" alt="Ручка"><a class="text-left menu" href="/classwork">Классная
+    работа</a>
+    <div>
+        <p>Активные задания</p>
+        <select id="activ_task" size="3">
+            <option value=”num_1”>Задача 1</option>
+            <option value=”num_2”>Задача 2</option>
+            <option value=”num_3”>Задача 3</option>
+
+        </select>
+         <p>На оценке</p>
+        <select id="on_check" >
+            <option value=”num_1”>5 задач</option>
+            <option value=”num_2”>Задача 2</option>
+            <option value=”num_3”>Задача 3</option>
+
+        </select>
+       <p>Оценено</p>
+        <select id="done" >
+            <option value=”num_1”>0 задач</option>
+            <option value=”num_2”>Задача 2</option>
+            <option value=”num_3”>Задача 3</option>
+
+        </select>
+    </div>
+</div>
+
+<div><img src="{% static 'testingSystem/img/rukzak.svg' %}" alt="Рюкзак"><a class="text-left menu" href="/homework">Домашняя
+    работа</a></div>
+
+<div>
+    <img src="{% static 'testingSystem/img/coder.svg' %}" alt="Степень"><a class="text-left menu" href="/examwork">Контрольная
+    работа</a>
+</div>
+<div>
+    <img src="{% static 'testingSystem/img/people.svg' %}" alt="Человек"><a class="text-left menu" href="/profile">Сергей
+    Сергеевич Сергеев</a>
+</div>
+<div>
+    <img src="{% static 'testingSystem/img/bachelor.svg' %}" alt="Выход">
+    <a class="text-left menu" href="/logout">Выйти</a>
+</div>
+
+
+</body>
+</html>

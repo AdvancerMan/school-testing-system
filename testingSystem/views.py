@@ -17,6 +17,22 @@ def extract_from_session(name, request, context):
     return context
 
 
+class ClassWorkView(TemplateView):
+    template_name = 'testingSystem/student_classwork.html'
+
+
+class IndexView(TemplateView):
+    template_name = 'testingSystem/student_first.html'
+
+
+class HomeWorkView(TemplateView):
+    template_name = 'testingSystem/student_homework.html'
+
+
+class ExamWorkView(TemplateView):
+    template_name = 'testingSystem/student_examwork.html'
+
+
 class AuthView(TemplateView):
     template_name = "testingSystem/auth.html"
 
