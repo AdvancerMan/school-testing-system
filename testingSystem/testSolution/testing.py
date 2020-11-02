@@ -1,8 +1,9 @@
 from testingSystem import models
 import subprocess
-import signal
 from SchoolTestingSystem import settings
 import os
+import shutil
+import psutil
 import threading
 from concurrent import futures
 import time
@@ -10,7 +11,7 @@ from importlib import import_module
 from .postProcessors.simple_post_processor import processor \
     as simple_post_processor
 
-REAL_TIME_LIMIT_ADDITION = 5  # seconds
+REAL_TIME_LIMIT = 5  # seconds
 
 
 def strip_answer(answer):
@@ -52,26 +53,22 @@ def invoke_post_processor(attempt, checked_tests):
     attempt.save()
 
 
-def check_resources(pid):
-    with open(f'/proc/{pid}/status', 'r') as f:
-        status_file = f.read().split(os.linesep)
-    memory_used = [s for s in status_file if s.startswith('VmRSS')]
-    if len(memory_used) == 0:
-        raise ProcessLookupError()
-    memory_used = int([s for s in memory_used[0].split() if s][1])
-
-    with open(f'/proc/{pid}/schedstat', 'r') as f:
-        time_used = int(f.read().split()[0]) // 10 ** 6
-    return memory_used, time_used
+def check_resources(process: psutil.Process):
+    with process.oneshot():
+        user_time_used = process.cpu_times().user
+        system_time_used = process.cpu_times().system
+        cpu_time_used = (user_time_used + system_time_used) * 1000
+        real_time_used = process.create_time()
+        memory_used = process.memory_info().rss // 1024
+    return memory_used, cpu_time_used, time.time() - real_time_used
 
 
 def test_program(task, start_program, test):
-    start_time = time.time()
-    process = subprocess.Popen(start_program,
-                               stdin=subprocess.PIPE,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
-    process.send_signal(signal.SIGSTOP)
+    process = psutil.Popen(start_program,
+                           stdin=subprocess.PIPE,
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE)
+    process.suspend()
 
     with futures.ThreadPoolExecutor() as executor:
         tested = executor.submit(
@@ -80,29 +77,28 @@ def test_program(task, start_program, test):
         try:
             while not tested.done():
                 try:
-                    memory_used, time_used = check_resources(process.pid)
+                    memory_used, cpu_time_used, real_time_used = \
+                        check_resources(process)
                 except ProcessLookupError:
                     break
                 test.memory_used = max(test.memory_used, memory_used)
-                test.time_used = max(test.time_used, time_used)
 
                 if memory_used > task.memory_limit:
                     test.status = models.Status.ML
-                    process.send_signal(signal.SIGKILL)
+                    process.kill()
 
-                if time_used > task.time_limit:
+                if cpu_time_used > task.time_limit:
                     test.status = models.Status.TL
-                    process.send_signal(signal.SIGKILL)
+                    process.kill()
 
-                if time.time() - start_time > \
-                        REAL_TIME_LIMIT_ADDITION + task.time_limit // 1000:
+                if real_time_used > REAL_TIME_LIMIT + task.time_limit:
                     test.status = models.Status.IL
-                    process.send_signal(signal.SIGKILL)
+                    process.kill()
 
-                process.send_signal(signal.SIGCONT)
+                process.resume()
                 time.sleep(0.020)
-                process.send_signal(signal.SIGSTOP)
-            process.send_signal(signal.SIGCONT)
+                process.suspend()
+            process.resume()
         except ProcessLookupError:
             pass
         output, errors = [s.decode() for s in tested.result()]
@@ -135,9 +131,9 @@ def compile_cpp(folder_path, code):
     source_path = os.path.join(folder_path, "main.cpp")
     with open(source_path, 'w') as f:
         f.write(code)
-    compilation = subprocess.Popen(["g++", source_path,
-                                    "-o", os.path.join(folder_path, "main")],
-                                   stderr=subprocess.PIPE)
+    compilation = psutil.Popen(["g++", source_path,
+                                "-o", os.path.join(folder_path, "main")],
+                               stderr=subprocess.PIPE)
     error = compilation.communicate()[1]
     if compilation.returncode != 0:
         raise CompilationError(error.decode())
@@ -180,13 +176,13 @@ def submit_attempt(attempt: models.Attempt):
                                f"attempt_{attempt.id}")
 
     try:
-        subprocess.run(["mkdir", "-p", folder_path])
+        os.makedirs(folder_path, exist_ok=True)
         test_attempt(attempt, folder_path, compiler, tester)
     except Exception as e:
         attempt.status = models.Status.SE
         raise e
     finally:
-        subprocess.run(["rm", "-rf", folder_path])
+        shutil.rmtree(folder_path, ignore_errors=True)
 
     return attempt
 
