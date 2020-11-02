@@ -126,13 +126,21 @@ def test_python(task, _, program_path, test):
     test_program(task, ['python3', program_path], test)
 
 
+class CompilationError(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+
+
 def compile_cpp(folder_path, code):
     source_path = os.path.join(folder_path, "main.cpp")
     with open(source_path, 'w') as f:
         f.write(code)
-    compilation = subprocess.run(["g++", source_path,
-                                  "-o", os.path.join(folder_path, "main")])
-    compilation.check_returncode()
+    compilation = subprocess.Popen(["g++", source_path,
+                                    "-o", os.path.join(folder_path, "main")],
+                                   stderr=subprocess.PIPE)
+    error = compilation.communicate()[1]
+    if compilation.returncode != 0:
+        raise CompilationError(error.decode())
     return "main"
 
 
@@ -148,9 +156,10 @@ def test_attempt(attempt, folder_path, compiler, tester):
     try:
         program_path = os.path.join(folder_path,
                                     compiler(folder_path, attempt.solution))
-    except subprocess.CalledProcessError:
+    except CompilationError as e:
         for test in tests:
             test.status = models.Status.CE
+            test.message = e.msg
     else:
         with futures.ThreadPoolExecutor() as executor:
             executor.map(lambda test: tester(attempt.task, folder_path,

@@ -1,60 +1,67 @@
-<!DOCTYPE html>
+{% extends 'testingSystem/common.html' %}
 {% load static %}
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-<div><img src="{% static 'testingSystem/img/pensil.svg' %}" alt="Ручка"><a class="text-left menu" href="/classwork">Классная
-    работа</a>
+
+{% block main %}
     <div>
-        <h2>Активные задания</h2>
-        <a>
-            <div>
-                <h4>Задача 1</h4>
-                <div>До 1 ноября</div>
-            </div>
+        <a href="{% url 'index' %}">< Назад</a>
+    </div>
+    <div>
+        <img src="{% static 'testingSystem/img/pensil.svg' %}" alt="Ручка">
+        <a class="text-left menu" href="{% url 'classwork' %}">
+            Классная работа
         </a>
-        <a>
-            <div>
-                <h4>Задача 2</h4>
-                <div>До 2 ноября</div>
-            </div>
-        </a>
-        <a>
-            <div>
-
-                <h4>Задача 2</h4>
-                <div>До 4 ноября</div>
-            </div>
-        </a>
-        <div >
-            <h2>На оценке</h2>
-        </div>
-
         <div>
-        <h2>Оценено</h2>
+            <h2>Активные задания</h2>
+            <a>
+                <div>
+                    <h4>Задача 1</h4>
+                    <div>До 1 ноября</div>
+                </div>
+            </a>
+            <a>
+                <div>
+                    <h4>Задача 2</h4>
+                    <div>До 2 ноября</div>
+                </div>
+            </a>
+            <a>
+                <div>
+                    <h4>Задача 2</h4>
+                    <div>До 4 ноября</div>
+                </div>
+            </a>
+            <div>
+                <h2>На оценке</h2>
+            </div>
+
+            <div>
+                <h2>Оценено</h2>
+            </div>
         </div>
     </div>
-</div>
 
-<div><img src="{% static 'testingSystem/img/rukzak.svg' %}" alt="Рюкзак"><a class="text-left menu" href="/homework">Домашняя
-    работа</a></div>
-
-<div>
-    <img src="{% static 'testingSystem/img/coder.svg' %}" alt="Степень"><a class="text-left menu" href="/examwork">Контрольная
-    работа</a>
-</div>
-<div>
-    <img src="{% static 'testingSystem/img/people.svg' %}" alt="Человек"><a class="text-left menu" href="/profile">Сергей
-    Сергеевич Сергеев</a>
-</div>
-<div>
-    <img src="{% static 'testingSystem/img/bachelor.svg' %}" alt="Выход">
-    <a class="text-left menu" href="/logout">Выйти</a>
-</div>
-
-
-</body>
-</html>
+    <div>
+        <img src="{% static 'testingSystem/img/rukzak.svg' %}" alt="Рюкзак">
+        <a class="text-left menu" href="{% url 'homework' %}">
+            Домашняя работа
+        </a>
+    </div>
+    <div>
+        <img src="{% static 'testingSystem/img/coder.svg' %}" alt="Степень">
+        <a class="text-left menu" href="{% url 'examwork' %}">
+            Контрольная работа
+        </a>
+    </div>
+    <div>
+        <img src="{% static 'testingSystem/img/people.svg' %}" alt="Человек">
+        <a class="text-left menu" href="#">
+            Сергей Сергеевич Сергеев
+        </a>
+    </div>
+    <div>
+        <img src="{% static 'testingSystem/img/bachelor.svg' %}" alt="Выход">
+        <a class="text-left menu" href="#">
+            Выйти
+        </a>
+    </div>
+{% endblock %}

@@ -46,6 +46,10 @@ class Test(models.Model):
     input = models.CharField(max_length=256 * 1024)
     output = models.CharField(max_length=256 * 1024)
 
+    def __str__(self):
+        return f"Вход: {self.input};; " \
+               f"Выход: {self.output}"
+
 
 class Testset(models.Model):
     tests = models.ManyToManyField(Test)
@@ -58,7 +62,7 @@ class CheckedTest(Test):
     message = models.CharField(default="", max_length=256 * 1024)
 
     def __str__(self):
-        return f"{self.message}     " \
+        return f"{self.message} " \
                f"[{self.status}] " \
                f"Использовано памяти: {self.memory_used} Килобайт; " \
                f"Использовано времени: {self.time_used} миллисекунд"
