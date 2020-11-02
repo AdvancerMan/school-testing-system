@@ -82,6 +82,7 @@ def test_program(task, start_program, test):
                 except ProcessLookupError:
                     break
                 test.memory_used = max(test.memory_used, memory_used)
+                test.time_used = max(test.time_used, cpu_time_used)
 
                 if memory_used > task.memory_limit:
                     test.status = models.Status.ML
