@@ -40,6 +40,7 @@ class Status(models.TextChoices):
     IL = 'IL', 'Превышен лимит ожидания'
     SE = 'SE', 'Ошибка сервера'
     RJ = 'RJ', 'Решение отклонено'
+    TS = 'TS', 'Рещение тестируется'
 
 
 class Test(models.Model):
@@ -55,7 +56,8 @@ class Testset(models.Model):
     tests = models.ManyToManyField(Test)
 
 
-class CheckedTest(Test):
+class CheckedTest(models.Model):
+    test = models.ForeignKey(Test, on_delete=models.CASCADE)
     status = models.CharField(max_length=2, choices=Status.choices)
     memory_used = models.IntegerField()
     time_used = models.IntegerField()

@@ -23,7 +23,7 @@
                 <th>Использовано памяти</th>
                 <th>Дополнительное сообщение</th>
             </tr>
-            {% for test in attempt.checked_tests.all %}
+            {% for test in tests %}
                 <tr>
                     <td>{{ forloop.counter }}</td>
                     <td>{{ test.status }}</td>

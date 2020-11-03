@@ -6,7 +6,7 @@ from django.views import View
 from django.shortcuts import render
 
 from . import models, forms
-from .testSolution.testing import submit_attempt_async
+from .testSolution.testing import submit_attempt_async, invoke_post_processor
 
 
 def extract_from_session(name, request, context):
@@ -83,6 +83,13 @@ class RecoverPasswordView(TemplateView):
         return extract_from_session('error', self.request, context)
 
 
+def tests_snapshot(attempt):
+    tests = list(attempt.checked_tests.all())
+    if models.Status.TS in [test.status for test in tests]:
+        attempt.score = invoke_post_processor(attempt, tests)
+    return tests
+
+
 class TaskView(View):
     def get(self, request, id, *args, **kwargs):
         task = models.Task.objects.filter(id=id).first()
@@ -94,23 +101,26 @@ class TaskView(View):
     def get_context_data(self, request, task):
         context = {
             'task': task,
-            'attempts': models.Attempt.objects.filter(
+            'attempts': list(models.Attempt.objects.filter(
                 task__id=task.id,
                 author__user_id=request.user.id
-            ),
+            ).all()),
             'languages': [choice[0] for choice in models.Language.choices]
         }
+        for attempt in context['attempts']:
+            tests_snapshot(attempt)
         extract_from_session('error', request, context)
         return extract_from_session('solution', request, context)
 
     def post(self, request, id, *args, **kwargs):
-        form = forms.TaskForm(request.POST)
+        form = forms.TaskForm(request.POST, request.FILES)
         if form.is_valid():
             data = form.cleaned_data
             language = data.get('language')
-            solution = data.get('solution_file')
-            if solution is None:
-                solution = data.get('solution')
+            solution_file = data.get('solution_file')
+            solution = data.get('solution')
+            if solution_file is not None:
+                solution = solution_file.file.read().decode()
             if solution is not None:
                 attempt = models.Attempt.objects.create(
                     author=models.MyUser.objects.filter(
@@ -137,4 +147,7 @@ class AttemptView(View):
         if attempt is None:
             return get404Response(request)
         return render(request, 'testingSystem/attempt.html',
-                      context={'attempt': attempt})
+                      context={
+                          'attempt': attempt,
+                          'tests': tests_snapshot(attempt)
+                      })

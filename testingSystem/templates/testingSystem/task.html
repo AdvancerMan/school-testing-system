@@ -66,9 +66,11 @@
             <h4>...Или загрузите файлом (пока недоступно)</h4>
             <input type="file" name="solution_file">
         </div>
-        <div>
-            {{ error }}
-        </div>
+        {% if error %}
+            <div>
+                {{ error }}
+            </div>
+        {% endif %}
         <div>
             <input type="submit" value="Отправить на проверку">
         </div>
