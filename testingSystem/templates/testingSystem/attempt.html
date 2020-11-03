@@ -1,4 +1,5 @@
 {% extends 'testingSystem/common.html' %}
+{% load extra_tags %}
 
 {% block main %}
     <h3>
@@ -26,7 +27,7 @@
             {% for test in tests %}
                 <tr>
                     <td>{{ forloop.counter }}</td>
-                    <td>{{ test.status }}</td>
+                    <td>{% status_label test.status %}</td>
                     <td>{{ test.time_used }} мс</td>
                     <td>{{ test.memory_used }} КБ</td>
                     <td>{{ test.message }}</td>
