@@ -1,0 +1,38 @@
+:root {
+    --white-fa: #FAFAFA;
+    --gray-c4: #C4C4C4;
+    --green-7a: #7AB68B;
+    --red-ff: #FF0000;
+    --form-field-border: 1px solid var(--gray-c4);
+    --border-radius: 5px;
+    --smaller-font-size: 13px;
+    --ordinary-font-size: 14px;
+    --bigger-font-size: 16px;
+    --even-bigger-font-size: 18px;
+    --title-font-size: 42px;
+
+    font-size: var(--ordinary-font-size);
+    font-family: Roboto, serif;
+}
+
+.centered-row {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+.centered-row {
+    flex-direction: row;
+}
+
+.error {
+    color: var(--red-ff);
+    font-weight: bold;
+    font-size: var(--even-bigger-font-size);
+}
+
+.beautiful-link {
+    font-weight: bold;
+    text-decoration: none;
+    color: var(--green-7a);
+}

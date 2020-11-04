@@ -1,31 +1,47 @@
 {% extends 'testingSystem/common.html' %}
 {% load static %}
 
+{% block head %}
+    <link rel="stylesheet" href="{% static 'testingSystem/css/auth.css' %}">
+{% endblock %}
+
 {% block main %}
-    <form method="post">
-        {% csrf_token %}
-        <p>Авторизация</p>
-        <label>
-            Логин
-            <input type="text" name="login">
-        </label>
-        <label>
-            Пароль
-            <input type="password" name="password">
-        </label>
-        <a href="{% url 'forgot' %}">Забыли пароль?</a>
-        <label>
-            Оставаться в системе
-            <input type="checkbox" name="stay_authorized" value="+">
-        </label>
-        {% if error %}
-            <div>
-                {{ error }}
+    <div class="centered-row auth-row">
+        <div>
+            <form method="post" class="centered-column auth-form">
+                {% csrf_token %}
+                <h1 class="auth-title">Авторизация</h1>
+                <div class="auth-field auth-text-field">
+                    <label for="login-auth">Логин</label>
+                    <input id="login-auth" type="text" name="login">
+                </div>
+                <div class="auth-field auth-text-field" id="password-field">
+                    <a class="beautiful-link forgot-link"
+                       href="{% url 'forgot' %}">Забыли пароль?</a>
+                    <label for="password-auth">Пароль</label>
+                    <input id="password-auth" type="password" name="password">
+                </div>
+                <div class="auth-field auth-check-field">
+                    <label for="stay-auth">Оставаться в системе</label>
+                    <input id="stay-auth" type="checkbox"
+                           name="stay_authorized">
+                </div>
+                {% if error %}
+                    <div class="error">
+                        {{ error }}
+                    </div>
+                {% endif %}
+                <div class="auth-field submit">
+                    <input type="submit" value="Войти">
+                </div>
+            </form>
+            <div class="register-link">
+                <a class="beautiful-link" href="{% url 'register' %}">
+                    Зарегистрироваться
+                </a>
             </div>
-        {% endif %}
-        <input type="submit" value="Войти">
-    </form>
-    <a href="{% url 'register' %}">Зарегистрироваться</a>
-    <img src="{% static 'testingSystem/img/authorize_code.svg' %}"
-         alt="Кодер кодит">
+        </div>
+        <img src="{% static 'testingSystem/img/authorize_code.svg' %}"
+             alt="Кодер кодит">
+    </div>
 {% endblock %}

@@ -1,8 +1,12 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}Московская Электронная Школа{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'testingSystem/css/normalize.css' %}">
+    <link rel="stylesheet" href="{% static 'testingSystem/css/common.css' %}">
+    {% block head %}{% endblock %}
 </head>
 <body>
 <main>
